@@ -20,9 +20,9 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-
 #include <linux/types.h>
 
+#include "util.h"
 #include "apfs.h"
 
 #define SZ_4K 4096

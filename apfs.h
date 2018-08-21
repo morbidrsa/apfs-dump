@@ -15,13 +15,6 @@
 #ifndef _APFS_H
 #define _APFS_H
 
-#include <linux/types.h>
-
-#define __packed __attribute__((packed));
-#ifndef u8
-typedef unsigned char u8;
-#endif
-
 enum apfs_blk_types {
 	APFS_BLK_NXSB		= 0x1,
 	APFS_BLK_BTROOT		= 0x2,
