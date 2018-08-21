@@ -27,18 +27,18 @@
 
 #define SZ_4K 4096
 
-static struct blktypes {
+static struct objtypes {
 	__le16 type;
 	char *name;
-} blktypes[] = {
-	{ APFS_BLK_NXSB,		"Container Superblock (NXSB)" },
-	{ APFS_BLK_BTROOT,		"BTree Root" },
-	{ APFS_BLK_BTNODE,		"BTree Node" },
-	{ APFS_BLK_SPACEMAN_HDR,	"Spaceman Header"},
-	{ APFS_BLK_BITMAP_HDR,		"Bitmap Header" },
-	{ APFS_BLK_BTREE_ROOT_PTR,	"BTree Root Ptr" },
-	{ APFS_BLK_ID_MAPPING,		"ID Mapping" },
-	{ APFS_BLK_APSB,		"Volume Superblock (APSB)" },
+} objtypes[] = {
+	{ APFS_OBJ_NXSB,		"Container Superblock (NXSB)" },
+	{ APFS_OBJ_BTROOT,		"BTree Root" },
+	{ APFS_OBJ_BTNODE,		"BTree Node" },
+	{ APFS_OBJ_SPACEMAN_HDR,	"Spaceman Header"},
+	{ APFS_OBJ_BITMAP_HDR,		"Bitmap Header" },
+	{ APFS_OBJ_BTREE_ROOT_PTR,	"BTree Root Ptr" },
+	{ APFS_OBJ_ID_MAPPING,		"ID Mapping" },
+	{ APFS_OBJ_APSB,		"Volume Superblock (APSB)" },
 	{ 0, NULL },
 };
 
@@ -70,15 +70,15 @@ static char *blktype2string(__le16 type)
 {
 	unsigned int i;
 
-	for (i = 0; i < ARRAY_SIZE(blktypes); i++) {
-		if (blktypes[i].type == type)
-			return blktypes[i].name;
+	for (i = 0; i < ARRAY_SIZE(objtypes); i++) {
+		if (objtypes[i].type == type)
+			return objtypes[i].name;
 	}
 
 	return "Unknown";
 }
 
-static void print_blkhdr(struct apfs_block_header *blkhdr)
+static void print_blkhdr(struct apfs_obj_header *blkhdr)
 {
 	printf("block header:\n");
 	printf("\tchecksum: 0x%llx\n", blkhdr->checksum);
@@ -129,7 +129,7 @@ static void print_container_sb(void *buf)
 
 static int read_image(char *path)
 {
-	struct apfs_block_header *blkhdr;
+	struct apfs_obj_header *objhdr;
 	ssize_t bytes;
 	int ret = 0;
 	void *buf;
@@ -156,10 +156,10 @@ static int read_image(char *path)
 		goto free_buf;
 	}
 
-	blkhdr = buf;
-	print_blkhdr(blkhdr);
-	switch (blkhdr->type) {
-	case APFS_BLK_NXSB:
+	objhdr = buf;
+	print_blkhdr(objhdr);
+	switch (objhdr->type) {
+	case APFS_OBJ_NXSB:
 		print_container_sb(buf);
 		break;
 	default:
