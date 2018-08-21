@@ -26,6 +26,15 @@ enum apfs_obj_types {
 	APFS_OBJ_APSB		= 0xd,
 };
 
+enum apfs_obj_subtype {
+	APFS_OBJ_SUB_NONE	= 0x00,
+	APFS_OBJ_SUB_HISTORY	= 0x09,
+	APFS_OBJ_SUB_LOCATION	= 0x0b,
+	APFS_OBJ_SUB_FILES	= 0x0e,
+	APFS_OBJ_SUB_EXTENTS	= 0x0f,
+	APFS_OBJ_SUB_UNKOWN	= 0x10,
+};
+
 /* https://static.ernw.de/whitepaper/ERNW_Whitepaper65_APFS-forensics_signed.pdf Table 1 */
 struct apfs_obj_header {
 	__le64 checksum;

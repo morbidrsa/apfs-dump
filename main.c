@@ -42,6 +42,19 @@ static struct objtypes {
 	{ 0, NULL },
 };
 
+static struct subtypes {
+	__le16 subtype;
+	char *name;
+} subtypes[] = {
+	{ APFS_OBJ_SUB_NONE,  		"No Subtype" },
+	{ APFS_OBJ_SUB_HISTORY,		"History" },
+	{ APFS_OBJ_SUB_LOCATION,	"Location" },
+	{ APFS_OBJ_SUB_FILES,		"Files"	},
+	{ APFS_OBJ_SUB_EXTENTS,		"Extents" },
+	{ APFS_OBJ_SUB_UNKOWN,		"Unknown" },
+	{ 0, NULL },
+};
+
 #define ARRAY_SIZE(x) (sizeof((x))/sizeof((x)[0]))
 
 void uuid_bin2str(unsigned char *bin, char *str)
@@ -78,6 +91,18 @@ static char *blktype2string(__le16 type)
 	return "Unknown";
 }
 
+static char *subtype2str(__le16 type)
+{
+	unsigned int i;
+
+	for (i = 0; ARRAY_SIZE(subtypes); i++) {
+		if (subtypes[i].subtype == type)
+			return subtypes[i].name;
+	}
+
+	return "Unknown";
+}
+
 static void print_blkhdr(struct apfs_obj_header *blkhdr)
 {
 	printf("block header:\n");
@@ -86,7 +111,8 @@ static void print_blkhdr(struct apfs_obj_header *blkhdr)
 	printf("\txid: 0x%llx\n", blkhdr->xid);
 	printf("\ttype: 0x%x (%s)\n", blkhdr->type, blktype2string(blkhdr->type));
 	printf("\tflags: 0x%x\n", blkhdr->flags);
-	printf("\tsubtype: 0x%x\n", blkhdr->subtype);
+	printf("\tsubtype: 0x%x (%s)\n", blkhdr->subtype,
+	       subtype2str(blkhdr->subtype));
 }
 
 static void print_container_sb(void *buf)
