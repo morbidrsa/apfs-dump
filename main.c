@@ -97,7 +97,7 @@ static char *subtype2str(__le16 type)
 {
 	unsigned int i;
 
-	for (i = 0; ARRAY_SIZE(subtypes); i++) {
+	for (i = 0; i < ARRAY_SIZE(subtypes); i++) {
 		if (subtypes[i].subtype == type)
 			return subtypes[i].name;
 	}
