@@ -79,4 +79,20 @@ struct apfs_container_sb {
 	__le64 fs_oid;
 } __packed;
 
+struct apfs_table_header {
+	__le16 page;
+	__le16 level;
+	__le32 entries_cnt;
+} __packed;
+
+struct apfs_btree_root {
+	struct apfs_obj_header hdr;
+	struct apfs_table_header tbl;
+	struct {
+		__le32 type1;
+		__le32 type2;
+		__le64 blk;
+	} entry[0xfd];
+} __packed;
+
 #endif /* _APFS_H */
