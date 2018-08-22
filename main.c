@@ -105,16 +105,16 @@ static char *subtype2str(__le16 type)
 	return "Unknown";
 }
 
-static void print_blkhdr(struct apfs_obj_header *blkhdr)
+static void print_objhdr(struct apfs_obj_header *objhdr)
 {
 	printf("block header:\n");
-	printf("\tchecksum: 0x%llx\n", blkhdr->checksum);
-	printf("\tnid: 0x%llx\n", blkhdr->oid);
-	printf("\txid: 0x%llx\n", blkhdr->xid);
-	printf("\ttype: 0x%x (%s)\n", blkhdr->type, blktype2string(blkhdr->type));
-	printf("\tflags: 0x%x\n", blkhdr->flags);
-	printf("\tsubtype: 0x%x (%s)\n", blkhdr->subtype,
-	       subtype2str(blkhdr->subtype));
+	printf("\tchecksum: 0x%llx\n", objhdr->checksum);
+	printf("\tnid: 0x%llx\n", objhdr->oid);
+	printf("\txid: 0x%llx\n", objhdr->xid);
+	printf("\ttype: 0x%x (%s)\n", objhdr->type, blktype2string(objhdr->type));
+	printf("\tflags: 0x%x\n", objhdr->flags);
+	printf("\tsubtype: 0x%x (%s)\n", objhdr->subtype,
+	       subtype2str(objhdr->subtype));
 }
 
 static __le64 container_sb_get_omap_oid(void *buf)
@@ -177,7 +177,7 @@ static void read_omap(int fd, __le64 omap_oid)
 	/* XXX Error handling */
 
 	btree = buf;
-	print_blkhdr(&btree->hdr);
+	print_objhdr(&btree->hdr);
 	printf("OMAP BTree Root Ptr:\n");
 	printf("\tpage: 0x%x\n", btree->tbl.page);
 	printf("\tlevel: 0x%x\n", btree->tbl.level);
@@ -220,7 +220,7 @@ static int read_image(char *path)
 	}
 
 	objhdr = buf;
-	print_blkhdr(objhdr);
+	print_objhdr(objhdr);
 	switch (objhdr->type) {
 	case APFS_OBJ_NXSB:
 		print_container_sb(buf);
