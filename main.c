@@ -164,7 +164,7 @@ static void print_container_sb(void *buf)
 
 static void read_omap(int fd, __le64 omap_oid)
 {
-	struct apfs_obj_header *objhdr;
+	struct apfs_btree_root *btree;
 	void *buf;
 
 	buf = malloc(SZ_4K);
@@ -176,8 +176,15 @@ static void read_omap(int fd, __le64 omap_oid)
 	pread(fd, buf, SZ_4K, omap_oid * SZ_4K);
 	/* XXX Error handling */
 
-	objhdr = buf;
-	print_blkhdr(objhdr);
+	btree = buf;
+	print_blkhdr(&btree->hdr);
+	printf("OMAP BTree Root Ptr:\n");
+	printf("\tpage: 0x%x\n", btree->tbl.page);
+	printf("\tlevel: 0x%x\n", btree->tbl.level);
+	printf("\tentries: 0x%x\n", btree->tbl.entries_cnt);
+	printf("\tentry[0].type1: 0x%x\n", btree->entry[0].type1);
+	printf("\tentry[0].type2: 0x%x\n", btree->entry[0].type2);
+	printf("\tentry[0].blk: 0x%llx\n", btree->entry[0].blk);
 
 	free(buf);
 }
