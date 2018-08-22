@@ -15,6 +15,9 @@
 #ifndef _APFS_H
 #define _APFS_H
 
+#include <linux/types.h>
+#include "util.h"
+
 enum apfs_obj_types {
 	APFS_OBJ_NXSB		= 0x1,
 	APFS_OBJ_BTROOT		= 0x2,

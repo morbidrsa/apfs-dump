@@ -1,6 +1,10 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -std=c99 -O2
+CFLAGS=-Wall -Wextra -std=c99 -O2 -MMD -MP
 PROG=apfs-dump
+
+SRCS=$(wildcard *.c)
+OBJS=$(SRCS:.c=.o)
+DEPS=$(SRCS:.c=.d)
 
 ifeq ("$(origin V)", "command line")
 	BUILD_VERBOSE = $(V)
@@ -15,19 +19,19 @@ else
 	Q = @
 endif
 
-all: $(PROG)
+-include $(DEPS)
 
-OBJS := main.o
+all: $(PROG)
 
 $(PROG): $(OBJS)
 	@echo "	   [LD]	   $@"
 	$(Q)$(CC) -o $@ $(OBJS)
 
-%.o: %.c
+$(OBJS): $(SRCS)
 	@echo "	   [CC]	   $@"
 	$(Q)$(CC) $(CFLAGS) -c $^
 
 .PHONY: clean
 clean:
 	@echo "	   [CLEAN] $(PROG)"
-	$(Q)rm -f *.o $(PROG)
+	$(Q)rm -f *.gch *.o *.d $(PROG)
