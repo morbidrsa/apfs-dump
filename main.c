@@ -12,6 +12,8 @@
  * more details.
  */
 
+#define _POSIX_C_SOURCE 200809L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <libgen.h>
@@ -115,6 +117,13 @@ static void print_blkhdr(struct apfs_obj_header *blkhdr)
 	       subtype2str(blkhdr->subtype));
 }
 
+static __le64 container_sb_get_omap_oid(void *buf)
+{
+	struct apfs_container_sb *nxsb = buf;
+
+	return nxsb->omap_oid;
+}
+
 static void print_container_sb(void *buf)
 {
 	struct apfs_container_sb *nxsb = buf;
@@ -153,9 +162,30 @@ static void print_container_sb(void *buf)
 	printf("\tFile system OID: 0x%llx\n", nxsb->fs_oid);
 }
 
+static void read_omap(int fd, __le64 omap_oid)
+{
+	struct apfs_obj_header *objhdr;
+	void *buf;
+
+	buf = malloc(SZ_4K);
+	if (!buf) {
+		perror("malloc");
+		return;
+	}
+
+	pread(fd, buf, SZ_4K, omap_oid * SZ_4K);
+	/* XXX Error handling */
+
+	objhdr = buf;
+	print_blkhdr(objhdr);
+
+	free(buf);
+}
+
 static int read_image(char *path)
 {
 	struct apfs_obj_header *objhdr;
+	__le64 omap_oid = 0;
 	ssize_t bytes;
 	int ret = 0;
 	void *buf;
@@ -187,10 +217,15 @@ static int read_image(char *path)
 	switch (objhdr->type) {
 	case APFS_OBJ_NXSB:
 		print_container_sb(buf);
+		omap_oid = container_sb_get_omap_oid(buf);
 		break;
 	default:
 		break;
 	}
+
+	if (omap_oid)
+		/* read the OMAP block */
+		read_omap(fd, omap_oid);
 
 free_buf:
 	free(buf);
