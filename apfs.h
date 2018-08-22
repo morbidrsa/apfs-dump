@@ -60,8 +60,8 @@ struct apfs_container_sb {
 	__le64 next_xid;
 	__le32 xp_desc_blocks;
 	__le32 xp_data_blocks;
-	__le32 xp_desc_base;
-	__le32 xp_data_base;
+	__le64 xp_desc_base;
+	__le64 xp_data_base;
 	__le32 xp_desc_len;
 	__le32 xp_data_len;
 	__le32 xp_desc_index;
@@ -71,6 +71,7 @@ struct apfs_container_sb {
 	__le64 spaceman_oid;
 	__le64 omap_oid;
 	__le64 reaper_oid;
+	__le32 unknown1;
 	__le32 max_file_systems;
 	__le64 fs_oid;
 } __packed;

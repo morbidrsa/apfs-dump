@@ -135,9 +135,9 @@ static void print_container_sb(void *buf)
 	printf("\tnext transaction ID: 0x%llx\n", nxsb->next_xid);
 	printf("\tCheckpoint descriptor blocks: 0x%x\n", nxsb->xp_desc_blocks);
 	printf("\tCheckpoint data blocks: 0x%x\n", nxsb->xp_data_blocks);
-	printf("\tCheckpoint descriptor base offset: 0x%x\n",
+	printf("\tCheckpoint descriptor base offset: 0x%llx\n",
 	       nxsb->xp_desc_base);
-	printf("\tCheckpoint data base offset: 0x%x\n", nxsb->xp_data_base);
+	printf("\tCheckpoint data base offset: 0x%llx\n", nxsb->xp_data_base);
 	printf("\tCheckpoint descriptor length: 0x%x\n", nxsb->xp_desc_len);
 	printf("\tCheckpoint data length: 0x%x\n", nxsb->xp_data_len);
 	printf("\tCheckpoint descriptor index: 0x%x\n", nxsb->xp_desc_index);
