@@ -118,14 +118,7 @@ static void print_objhdr(struct apfs_obj_header *objhdr)
 	       subtype2str(objhdr->subtype));
 }
 
-static __le64 container_sb_get_omap_oid(void *buf)
-{
-	struct apfs_container_sb *nxsb = buf;
-
-	return nxsb->omap_oid;
-}
-
-static void print_container_sb(void *buf)
+static struct apfs_container_sb *print_container_sb(void *buf)
 {
 	struct apfs_container_sb *nxsb = buf;
 	char uuid[128];
@@ -161,6 +154,8 @@ static void print_container_sb(void *buf)
 	printf("\tReaper OID: 0x%llx\n", nxsb->reaper_oid);
 	printf("\tMaximum File Systems: 0x%x\n", nxsb->max_file_systems);
 	printf("\tFile system OID: 0x%llx\n", nxsb->fs_oid);
+
+	return nxsb;
 }
 
 struct node_info {
@@ -315,7 +310,9 @@ static int read_image(char *path)
 {
 	struct apfs_obj_header *objhdr;
 	struct btree_node_fixed *omap_root;
+	struct apfs_container_sb *nxsb = NULL;
 	__le64 omap_oid = 0;
+	__le64 fs_oid = 0;
 	ssize_t bytes;
 	int ret = 0;
 	void *buf;
@@ -344,15 +341,11 @@ static int read_image(char *path)
 
 	objhdr = buf;
 	print_objhdr(objhdr);
-	switch (objhdr->type) {
-	case APFS_OBJ_NXSB:
-		print_container_sb(buf);
-		omap_oid = container_sb_get_omap_oid(buf);
-		break;
-	default:
-		break;
-	}
+	if (objhdr->type != APFS_OBJ_NXSB)
+		goto free_buf;
 
+	nxsb = print_container_sb(buf);
+	omap_oid = nxsb->omap_oid;
 	if (!omap_oid)
 		goto free_buf;
 
@@ -360,6 +353,9 @@ static int read_image(char *path)
 	omap_root = read_omap(fd, omap_oid);
 	if (!omap_root)
 		goto free_buf;
+
+	/* Lookup the LBA of the FS in the OMAP B-Tree*/
+	fs_oid = nxsb->fs_oid;
 
 /* free_omap_root: */
 	free(omap_root);
