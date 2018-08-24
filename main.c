@@ -238,37 +238,23 @@ static struct btree_node_fixed *btree_create_fixed_node(void *buf, size_t size, 
 		printf("\tparent: 0x%llx\n", (unsigned long long) node->parent);
 		printf("\tblock: 0x%llx\n", (unsigned long long) node->blk);
 		printf("\tkeys_start: 0x%x\n", node->keys_start);
-		printf("\tvals_len: 0x%x\n", node->vals_start);
+		printf("\tvals_start: 0x%x\n", node->vals_start);
+		printf("\tnode level: %d\n", node->bt->level);
 	}
 
 	return node;
 }
 
-static struct btree_node *btree_create_variable_node(void *buf, ssize_t size, uint64_t parent, __le64 blk)
-{
-}
-
-static void*btree_create_node(void *buf, size_t size, uint64_t parent, __le64 blk)
-{
-	struct apfs_btree_header *bt = buf + sizeof(struct apfs_obj_header);
-
-	printf("bt->flags: 0x%x\n", bt->flags);
-	if (bt->flags & 4)
-		return btree_create_fixed_node(buf, size, parent, blk);
-	else
-		return btree_create_variable_node(buf, size, parent, blk);
-}
-
-static void read_btree(int fd, __le64 blk)
+static struct btree_node_fixed *read_btree(int fd, __le64 blk)
 {
 	struct apfs_btree_root *root;
-	struct node_info ni;
+	struct btree_node_fixed *root_node;
 	void *buf;
 
 	buf = malloc(SZ_4K);
 	if (!buf) {
 		perror("malloc");
-		return;
+		return NULL;
 	}
 
 	pread(fd, buf, SZ_4K, blk * SZ_4K);
@@ -280,14 +266,20 @@ static void read_btree(int fd, __le64 blk)
 	printf("\tlevel: 0x%x\n", root->tbl.level);
 	printf("\tentries_cnt: 0x%x\n", root->tbl.entries_cnt);
 
-	ni.flags = 0;
-	ni.size = 0x1000;
-	ni.bid = blk;
+	root_node = btree_create_fixed_node(buf, SZ_4K, 0, blk);
+	if (!root_node) {
+		perror("malloc");
+		goto free_buf;
+	}
 
-	btree_create_node(buf, SZ_4K, 0, blk);
+	return root_node;
+
+free_buf:
+	free(buf);
+	return NULL;
 }
 
-static void read_omap(int fd, __le64 omap_oid)
+static struct btree_node_fixed *read_omap(int fd, __le64 omap_oid)
 {
 	struct apfs_btree_root *btree;
 	__le64 blk;
@@ -296,7 +288,7 @@ static void read_omap(int fd, __le64 omap_oid)
 	buf = malloc(SZ_4K);
 	if (!buf) {
 		perror("malloc");
-		return;
+		return NULL;
 	}
 
 	pread(fd, buf, SZ_4K, omap_oid * SZ_4K);
@@ -316,12 +308,13 @@ static void read_omap(int fd, __le64 omap_oid)
 	blk = btree->entry[0].blk;
 	free(buf);
 
-	read_btree(fd, blk);
+	return read_btree(fd, blk);
 }
 
 static int read_image(char *path)
 {
 	struct apfs_obj_header *objhdr;
+	struct btree_node_fixed *omap_root;
 	__le64 omap_oid = 0;
 	ssize_t bytes;
 	int ret = 0;
@@ -360,10 +353,16 @@ static int read_image(char *path)
 		break;
 	}
 
-	if (omap_oid)
-		/* read the OMAP block */
-		read_omap(fd, omap_oid);
+	if (!omap_oid)
+		goto free_buf;
 
+	/* read the OMAP block */
+	omap_root = read_omap(fd, omap_oid);
+	if (!omap_root)
+		goto free_buf;
+
+/* free_omap_root: */
+	free(omap_root);
 free_buf:
 	free(buf);
 close_fd:
