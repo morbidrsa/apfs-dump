@@ -1,8 +1,9 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -std=c99 -O2 -MMD -MP
+CFLAGS=-Wall -Wextra -std=c99 -O2
 PROG=apfs-dump
 
 SRCS=$(wildcard *.c)
+HDRS=$(wildcard *.h)
 OBJS=$(SRCS:.c=.o)
 DEPS=$(SRCS:.c=.d)
 
@@ -19,15 +20,13 @@ else
 	Q = @
 endif
 
--include $(DEPS)
-
 all: $(PROG)
 
 $(PROG): $(OBJS)
 	@echo "	   [LD]	   $@"
 	$(Q)$(CC) -o $@ $(OBJS)
 
-$(OBJS): $(SRCS)
+$(OBJS): $(SRCS)  $(HDRS)
 	@echo "	   [CC]	   $@"
 	$(Q)$(CC) $(CFLAGS) -c $^
 
