@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdint.h>
 
 #include <linux/types.h>
 
@@ -162,10 +163,133 @@ static void print_container_sb(void *buf)
 	printf("\tFile system OID: 0x%llx\n", nxsb->fs_oid);
 }
 
+struct node_info {
+	__le32 flags;
+	__le32 size;
+	__le64 bid;
+};
+
+struct apfs_nid_map_key {
+	__le64 nid;
+	__le64 xid;
+} __packed;
+
+
+struct btree_node {
+	uint16_t keys_start;
+	uint16_t vals_start;
+
+	uint64_t parent;
+	uint64_t blk;
+
+	struct apfs_obj_header *ohdr;
+	struct apfs_btree_header *bt;
+};
+
+struct apfs_btree_entry_fixed {
+	__le16 key_offs;
+	__le16 val_offs;
+} __packed;
+
+struct btree_node_fixed {
+	uint16_t keys_start;
+	uint16_t vals_start;
+
+	uint64_t parent;
+	uint64_t blk;
+
+	struct apfs_obj_header *ohdr;
+	struct apfs_btree_header *bt;
+	struct apfs_btree_entry_fixed* entries;
+};
+
+struct apfs_bt_footer {
+	__le32 unk_FD8;
+        __le32 unk_FDC; // 0x1000 - Node Size?
+        __le32 min_key_size; // Key Size - or 0
+        __le32 min_val_size; // Value Size - or 0
+        __le32 max_key_size; // (Max) Key Size - or 0
+        __le32 max_val_size; // (Max) Value Size - or 0
+        __le64 entries_cnt; // Total entries in B*-Tree
+        __le64 nodes_cnt; // Total nodes in B*-Tree
+} __packed;
+
+static struct btree_node_fixed *btree_create_fixed_node(void *buf, size_t size,  uint64_t parent, __le64 blk)
+{
+	struct btree_node_fixed *node;
+
+	node = malloc(sizeof(*node));
+	if (node) {
+		struct apfs_obj_header *ohdr = buf;;
+		struct apfs_btree_header *bt = buf + sizeof(struct apfs_obj_header);
+
+		node->parent = parent;
+		node->blk = blk;
+
+		node->ohdr = ohdr;
+		node->bt = bt;
+
+		node->keys_start = 0x38 + bt->keys_len;
+		node->vals_start = (parent != 0) ? size : size - sizeof(struct apfs_bt_footer);
+
+		node->entries = buf + 0x38;
+
+		printf("Fixed BTree Entry:\n");
+		printf("\tparent: 0x%llx\n", (unsigned long long) node->parent);
+		printf("\tblock: 0x%llx\n", (unsigned long long) node->blk);
+		printf("\tkeys_start: 0x%x\n", node->keys_start);
+		printf("\tvals_len: 0x%x\n", node->vals_start);
+	}
+
+	return node;
+}
+
+static struct btree_node *btree_create_variable_node(void *buf, ssize_t size, uint64_t parent, __le64 blk)
+{
+}
+
+static void*btree_create_node(void *buf, size_t size, uint64_t parent, __le64 blk)
+{
+	struct apfs_btree_header *bt = buf + sizeof(struct apfs_obj_header);
+
+	printf("bt->flags: 0x%x\n", bt->flags);
+	if (bt->flags & 4)
+		return btree_create_fixed_node(buf, size, parent, blk);
+	else
+		return btree_create_variable_node(buf, size, parent, blk);
+}
+
+static void read_btree(int fd, __le64 blk)
+{
+	struct apfs_btree_root *root;
+	struct node_info ni;
+	void *buf;
+
+	buf = malloc(SZ_4K);
+	if (!buf) {
+		perror("malloc");
+		return;
+	}
+
+	pread(fd, buf, SZ_4K, blk * SZ_4K);
+
+	root = buf;
+	print_objhdr(&root->hdr);
+	printf("Btree Root:\n");
+	printf("\tpage: 0x%x\n", root->tbl.page);
+	printf("\tlevel: 0x%x\n", root->tbl.level);
+	printf("\tentries_cnt: 0x%x\n", root->tbl.entries_cnt);
+
+	ni.flags = 0;
+	ni.size = 0x1000;
+	ni.bid = blk;
+
+	btree_create_node(buf, SZ_4K, 0, blk);
+}
+
 static void read_omap(int fd, __le64 omap_oid)
 {
 	struct apfs_btree_root *btree;
-	struct apfs_obj_header *objhdr;
 	__le64 blk;
 	void *buf;
 
@@ -190,13 +314,9 @@ static void read_omap(int fd, __le64 omap_oid)
 
 
 	blk = btree->entry[0].blk;
-
-	pread(fd, buf, SZ_4K, blk * SZ_4K);
-
-	objhdr = buf;
-	print_objhdr(objhdr);
-
 	free(buf);
+
+	read_btree(fd, blk);
 }
 
 static int read_image(char *path)
