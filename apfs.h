@@ -95,4 +95,29 @@ struct apfs_btree_root {
 	} entry[0xfd];
 } __packed;
 
+struct apfs_btree_header {
+	__le16 flags; // Bit 0x4 : Fixed
+        __le16 level; // 0 = Leaf
+        __le32 entries_cnt;
+        __le16 keys_offs;
+        __le16 keys_len;
+        __le16 free_offs;
+        __le16 free_len;
+        __le16 unk_30;
+        __le16 unk_32;
+        __le16 unk_34;
+        __le16 unk_36;
+} __packed;
+
+struct apfs_node_id_map_key {
+	__le64 nid;
+	__le64 xid;
+} __packed;
+
+struct apfs_node_id_map_value {
+	__le32 flags;
+	__le32 size;
+	__le64 blk;
+} __packed;
+
 #endif /* _APFS_H */
