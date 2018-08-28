@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stddef.h>
+#include <time.h>
 
 #include <linux/types.h>
 
@@ -551,12 +552,29 @@ static struct btree_node_fixed *read_omap(__le64 omap_oid)
 	return read_btree(blk);
 }
 
+void print_apfs_timestamp(uint64_t ts)
+{
+	struct tm tm;
+	time_t secs;
+	uint32_t nanos;
+
+	nanos = ts % 1000000000ull;
+	secs = ts / 1000000000ull;
+
+	gmtime_r(&secs, &tm);
+
+	printf("%d-%d-%d %d:%d:%d.%d\n",
+	       tm.tm_year + 1900, tm.tm_mon, tm.tm_mday, tm.tm_hour, tm.tm_min,
+	       tm.tm_sec, nanos);
+}
+
 void print_apfs_apsb_accessor_info(struct apfs_apsb_accessor_info *ifo)
 {
 	printf("\tAPSB Accessor Info:\n");
 	printf("\t\tLast XID: 0x%llx\n", ifo->last_xid);
 	printf("\t\tAccessor: %s\n", ifo->id);
-	printf("\t\ttimestamp: 0x%llx\n", ifo->timestamp);
+	printf("\t\ttimestamp: ");
+	print_apfs_timestamp(ifo->timestamp);
 }
 
 static struct apfs_volume_sb *print_volume_sb(__le64 blk)
@@ -592,7 +610,8 @@ static struct apfs_volume_sb *print_volume_sb(__le64 blk)
 	printf("\tNumber of other Objects: 0x%llx\n", apsb->num_other_fsobjects);
 	printf("\tNumber of Snapshots: 0x%llx\n", apsb->num_snapshots);
 	printf("\tVolume UUID: %s\n", uuid);
-	printf("\tLast modified: 0x%llx\n", apsb->last_mod_time);
+	printf("\tLast modified: ");
+	print_apfs_timestamp(apsb->last_mod_time);
 	for (i = 0; i < ARRAY_SIZE(apsb->ai); i++)
 		print_apfs_apsb_accessor_info(&apsb->ai[i]);
 	printf("\tVolume Name: %s\n", apsb->volname);
