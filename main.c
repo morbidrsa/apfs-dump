@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <stddef.h>
 
 #include <linux/types.h>
 
@@ -550,11 +551,61 @@ static struct btree_node_fixed *read_omap(__le64 omap_oid)
 	return read_btree(blk);
 }
 
+void print_apfs_apsb_accessor_info(struct apfs_apsb_accessor_info *ifo)
+{
+	printf("\tAPSB Accessor Info:\n");
+	printf("\t\tLast XID: 0x%llx\n", ifo->last_xid);
+	printf("\t\tAccessor: %s\n", ifo->id);
+	printf("\t\ttimestamp: 0x%llx\n", ifo->timestamp);
+}
+
+static struct apfs_volume_sb *print_volume_sb(__le64 blk)
+{
+	struct apfs_volume_sb *apsb;
+	char uuid[128];
+	unsigned int i;
+
+	apsb = malloc(sizeof(struct apfs_volume_sb));
+	if (!apsb)
+		return NULL;
+
+	pread(fd, apsb, sizeof(struct apfs_volume_sb), blk * SZ_4K);
+
+	uuid_bin2str(apsb->vol_uuid, uuid);
+
+	print_objhdr(&apsb->hdr);
+	printf("Volume Superblock:\n");
+	printf("\tMagic: 0x%x\n", apsb->magic);
+	printf("\tFS Index: 0x%x\n" , apsb->fsidx);
+	printf("\tFeatures: 0x%llx\n" , apsb->features);
+	printf("\tReserved blocks: 0x%llx\n", apsb->fs_reseve_blk_cnt);
+	printf("\tFS Quota blocks: 0x%llx\n", apsb->fs_quota_blk_cnt);
+	printf("\tFS allocated blocks: 0x%llx\n", apsb->fs_alloc_count);
+	printf("\tOMAP OID: 0x%llx\n", apsb->omap_oid);
+	printf("\tRoot Directory OID: 0x%llx\n", apsb->root_tree_oid);
+	printf("\tExtent Tree OID: 0x%llx\n", apsb->extentref_tree_oid);
+	printf("\tSnapshot Tree OID: 0x%llx\n", apsb->snap_meta_tree_oid);
+	printf("\tapsb->next_doc_id: 0x%llx\n", apsb->next_doc_id);
+	printf("\tNumber of Files: 0x%llx\n", apsb->num_files);
+	printf("\tNumber of Directories: 0x%llx\n", apsb->num_directories);
+	printf("\tNumber of Symlinks: 0x%llx\n", apsb->num_symlinks);
+	printf("\tNumber of other Objects: 0x%llx\n", apsb->num_other_fsobjects);
+	printf("\tNumber of Snapshots: 0x%llx\n", apsb->num_snapshots);
+	printf("\tVolume UUID: %s\n", uuid);
+	printf("\tLast modified: 0x%llx\n", apsb->last_mod_time);
+	for (i = 0; i < ARRAY_SIZE(apsb->ai); i++)
+		print_apfs_apsb_accessor_info(&apsb->ai[i]);
+	printf("\tVolume Name: %s\n", apsb->volname);
+
+	return apsb;
+}
+
 static int read_image(char *path)
 {
 	struct apfs_obj_header *objhdr;
 	struct btree_node_fixed *omap_root;
 	struct apfs_container_sb *nxsb = NULL;
+	struct apfs_volume_sb *apsb = NULL;
 	struct apfs_node_id_map_key key;
 	struct apfs_node_id_map_value *val;
 	__le64 omap_oid = 0;
@@ -612,6 +663,8 @@ static int read_image(char *path)
 		goto free_omap_root;
 
 	printf("FS Object ID: 0x%llx is at block 0x%llx\n", fs_oid, val->blk);
+
+	apsb = print_volume_sb(val->blk);
 
 free_omap_root:
 	free(omap_root);

@@ -120,4 +120,48 @@ struct apfs_node_id_map_value {
 	__le64 blk;
 } __packed;
 
+struct apfs_apsb_accessor_info {
+	__le64 last_xid;
+	char id[32];
+	__le64 timestamp;
+};
+
+struct apfs_volume_sb {
+	struct apfs_obj_header hdr;
+	__le32 magic;
+	__le32 fsidx;
+	__le64 features;
+	__le64 unk1;
+	__le64 unk2;
+	__le64 unk3;
+	__le64 fs_reseve_blk_cnt;
+	__le64 fs_quota_blk_cnt;
+	__le64 fs_alloc_count;
+	__le64 unk4;
+	__le64 unk5;
+	__le64 unk6;
+	__le64 unk7;
+	__le64 omap_oid;
+	__le64 root_tree_oid;
+	__le64 extentref_tree_oid;
+	__le64 snap_meta_tree_oid;
+	__le64 next_doc_id;
+	__le64 num_files;
+	__le64 num_directories;
+	__le64 num_symlinks;
+	__le64 num_other_fsobjects;
+	__le64 num_snapshots;
+	__le64 unk8;
+	__le64 unk9;
+	__le64 unk10;
+	__le64 unk11;
+	u8 vol_uuid[16];
+	__le64 last_mod_time;
+	struct apfs_apsb_accessor_info ai[9];
+	__le64 unk12;
+	char volname[0x100];
+	__le64 unk13;
+	__le64 unk14;
+} __packed;
+
 #endif /* _APFS_H */
