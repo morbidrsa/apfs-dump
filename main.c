@@ -623,6 +623,7 @@ static int read_image(char *path)
 {
 	struct apfs_obj_header *objhdr;
 	struct btree_node_fixed *omap_root;
+	struct btree_node_fixed *dir_omap_root;
 	struct apfs_container_sb *nxsb = NULL;
 	struct apfs_volume_sb *apsb = NULL;
 	struct apfs_node_id_map_key key;
@@ -684,6 +685,22 @@ static int read_image(char *path)
 	printf("FS Object ID: 0x%llx is at block 0x%llx\n", fs_oid, val->blk);
 
 	apsb = print_volume_sb(val->blk);
+	printf("searching for Root Directory at object ID: 0x%llx\n",
+	       apsb->root_tree_oid);
+
+	free(val);
+
+	dir_omap_root = read_omap(apsb->omap_oid);
+	key.nid = apsb->root_tree_oid;
+
+	val = btree_lookup(dir_omap_root, &key);
+	printf("Root Directory Object ID: 0x%llx is at block: 0x%llx\n",
+	       apsb->root_tree_oid, val->blk);
+
+	free(val);
+
+	free(dir_omap_root);
+	free(apsb);
 
 free_omap_root:
 	free(omap_root);
