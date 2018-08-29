@@ -414,6 +414,8 @@ static int find_bin(struct btree_node_fixed *node, struct apfs_node_id_map_key *
 			begin = mid + 1;
 		else if (rc == 1)
 			end = mid -1;
+
+		free(e);
 	}
 
 	res = (rc == 0) ? mid : -1;
@@ -449,6 +451,8 @@ static struct apfs_node_id_map_value *btree_lookup(struct btree_node_fixed *node
 		goto err;
 
 	res->blk = (__le64) e->val.blk;
+	free(e);
+
 	return res;
 err:
 	free(res);
@@ -514,6 +518,7 @@ static struct btree_node_fixed *read_btree(__le64 blk)
 		printf("\tblk: 0x%llx\n", val->blk);
 	}
 
+	free(buf);
 	return root_node;
 
 free_buf:
